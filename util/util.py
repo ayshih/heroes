@@ -19,6 +19,7 @@ from sunpy.time import parse_time
 from scipy.integrate import quad
 from scipy.integrate import dblquad
 from scipy import interpolate
+from scipy.misc import derivative
 
 try:
     from .. fit_data import Fit_data
@@ -404,8 +405,10 @@ def plot_foxsi_effarea_compare():
 	
 def heroes_effective_area_fit():
     
-    data13 = np.genfromtxt(data_dir + 'aeff_13shells_sky.dat', skip_header = 2)
-    data14 = np.genfromtxt(data_dir + 'aeff_14shells_sky.dat', skip_header = 2)
+    data13 = np.genfromtxt(os.path.join(data_dir, 'aeff_13shells_sky.dat'),
+                           skip_header = 2)
+    data14 = np.genfromtxt(os.path.join(data_dir, 'aeff_14shells_sky.dat'),
+                                        skip_header = 2)
     
     energy = data13[:,0] # keV, axis assumed to be the same in the two files
     #energy = np.arange(17.50,80.25,0.25)
@@ -451,4 +454,37 @@ def heroes_effective_area_gaussian(energy_range=(20,30), fwhm=3, radius=9.5):
     norm_area = 1.
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
-    
+
+def heroes_effective_area_actual(energy_range=(20,30), actual='grs1915',
+                                 radius=9.5):
+    """
+    Calculates the average effective area using actual HERO pointing data
+    Currently fits coarse histogram data with a quartic polynomial
+
+    energy_range is in keV
+    actual can be 'grs1915' or 'all'
+    radius of integration area is in arcmin
+    """
+    f2d = heroes_effective_area_fit()
+
+    data = np.genfromtxt(os.path.join(data_dir,'hero2011_pointing.txt'),
+                         skip_header = 1, names=['arcmin','grs1915','all'])
+
+# Incredibly slow, either due to Fit_data or due to derivative
+#    f = Fit_data(data['arcmin'], data[actual], 'Offset', 'Cumulative fraction',
+#                 'HERO 2011, ' + actual, 'arcmin', '', log = [0,1])
+#
+#    area = dblquad(lambda e,r: f2d(e,r)*derivative(f.func,r,dx=0.25),
+#                   0, radius,
+#                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+
+    # Instead, fit with a fourth-degree polynomial and analytically differentiate
+    p = np.polyfit(data['arcmin'],data[actual],4)
+    dp = p[0:4]*[4,3,2,1] # Hopefully this is never negative...
+    area = dblquad(lambda e,r: f2d(e,r)*np.poly1d(dp)(r),
+                   0, radius,
+                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+
+    norm_area = 1.
+    area /= norm_area*(energy_range[1]-energy_range[0])
+    return area
