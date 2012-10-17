@@ -438,19 +438,33 @@ def heroes_effective_area_tophat(energy_range=(20,30), radius=9.5):
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
 
-def heroes_effective_area_gaussian(energy_range=(20,30), fwhm=3, radius=9.5):
+def heroes_effective_area_gaussian(energy_range=(20,30), fwhm=3, radius=9.5,
+                                   offaxis=0):
     """
-    Calculates the average effective area for an on-axis Gaussian exposure
+    Calculates the average effective area for a Gaussian exposure.  Off-axis
+    exposures take *much* longer to calculate, by >~2 orders of magnitude in
+    time!
     
     energy_range is in keV
     fwhm of source is in arcmin
     radius of integration area is in arcmin
+    offaxis is in arcmin
     """
     f2d = heroes_effective_area_fit()
     sigma = fwhm/2.355
-    area = integrate.dblquad(lambda e,r: f2d(e,r)*r*np.exp(-(r/sigma)**2/2)/sigma**2,
-                             0, radius,
-                             lambda e:energy_range[0], lambda e: energy_range[1])[0]
+    if offaxis == 0:
+        area = integrate.dblquad(lambda e,r: f2d(e,r)*r*np.exp(-(r/sigma)**2/2)/sigma**2,
+                                 0, radius,
+                                 lambda e:energy_range[0], lambda e: energy_range[1])[0]
+    else:
+        r2 = lambda x,y: x**2+y**2
+#        area = integrate.dblquad(lambda y,x: np.exp(-(r(x-offaxis,y)/sigma)**2/2)/(2*np.pi*sigma**2),
+#                                 -radius, radius,
+#                                 lambda x: -np.sqrt(radius**2-x**2), lambda x: np.sqrt(radius**2-x**2))[0]
+        area = integrate.tplquad(lambda e,y,x: f2d(e,np.sqrt(r2(x,y)))*np.exp(-r2(x-offaxis,y)/sigma**2/2)/(2*np.pi*sigma**2),
+                                 -radius, radius,
+                                 lambda x: -np.sqrt(radius**2-x**2), lambda x: np.sqrt(radius**2-x**2),
+                                 lambda x,y: energy_range[0], lambda x,y: energy_range[1])[0]
     norm_area = 1.
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
