@@ -459,29 +459,61 @@ def heroes_effective_area_actual(energy_range=(20,30), actual='grs1915',
                                  radius=9.5):
     """
     Calculates the average effective area using actual HERO pointing data
-    Currently fits coarse histogram data with a quartic polynomial
+
+    Currently fits 'grs1915' and 'all' with a quartic polynomial
+
+    Currently performs a linear spline interpolation for 'cena'
 
     energy_range is in keV
-    actual can be 'grs1915' or 'all'
+
+    actual can be 'grs1915', 'cena', or 'all'
+
     radius of integration area is in arcmin
     """
     f2d = heroes_effective_area_fit()
 
-    data = np.genfromtxt(os.path.join(data_dir,'hero2011_pointing.txt'),
-                         skip_header = 1, names=['arcmin','grs1915','all'])
+    if actual in ['grs1915','all']:
+        data = np.genfromtxt(os.path.join(data_dir,'hero2011_pointing.txt'),
+                             skip_header = 1, names=['arcmin','grs1915','all'])
 
-# Incredibly slow, either due to Fit_data or due to derivative
-#    f = Fit_data(data['arcmin'], data[actual], 'Offset', 'Cumulative fraction',
-#                 'HERO 2011, ' + actual, 'arcmin', '', log = [0,1])
+    # Incredibly slow, either due to Fit_data or due to derivative
+    #    f = Fit_data(data['arcmin'], data[actual], 'Offset', 'Cumulative fraction',
+    #                 'HERO 2011, ' + actual, 'arcmin', '', log = [0,1])
+    #
+    #    area = dblquad(lambda e,r: f2d(e,r)*derivative(f.func,r,dx=0.25),
+    #                   0, radius,
+    #                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+
+        # Instead, fit with a fourth-degree polynomial and analytically differentiate
+        # GRS1915 fits with a negative intercept, so this process (which effectively
+        #   zeroes out the intercept) will overestimate the exposure in the range
+        #   of [0,0.25] arcmin
+        # For 'all', the reverse is true (the intercept is positive)
+        p = np.polyfit(data['arcmin'],data[actual],4)
+        dp = p[0:4]*[4,3,2,1] # Hopefully this is never negative...
+
+        func = np.poly1d(dp)
+
+    elif actual in ['cena']:
+        data = np.genfromtxt(os.path.join(data_dir,'hero2011_pointing_cena.txt'),
+                             skip_header = 0, names=['arcmin','cena','cena_diff'])
+        data['cena_diff'] /= 0.25
+
+#        f = Fit_data(data['arcmin'],data['cena_diff'],
+#                            'Offset','Differential exposure',
+#                            'Title','arcmin','',log=[0,0])
 #
-#    area = dblquad(lambda e,r: f2d(e,r)*derivative(f.func,r,dx=0.25),
-#                   0, radius,
-#                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+#        func = f.func
 
-    # Instead, fit with a fourth-degree polynomial and analytically differentiate
-    p = np.polyfit(data['arcmin'],data[actual],4)
-    dp = p[0:4]*[4,3,2,1] # Hopefully this is never negative...
-    area = dblquad(lambda e,r: f2d(e,r)*np.poly1d(dp)(r),
+        func = interpolate.interp1d(data['arcmin'], data['cena_diff'],
+                                    kind='linear',
+                                    bounds_error=False, fill_value=0)
+
+    else:
+        raise ValueError("Invalid target for actual pointing data")
+
+
+    area = dblquad(lambda e,r: f2d(e,r)*func(r),
                    0, radius,
                    lambda e:energy_range[0], lambda e: energy_range[1])[0]
 
