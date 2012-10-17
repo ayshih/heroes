@@ -17,7 +17,7 @@ import shutil
 from sunpy.time import parse_time
 
 from scipy.integrate import quad
-from scipy.integrate import dblquad
+from scipy import integrate
 from scipy import interpolate
 from scipy.misc import derivative
 
@@ -431,9 +431,9 @@ def heroes_effective_area_tophat(energy_range=(20,30), radius=9.5):
     radius of tophat is in arcmin
     """   
     f2d = heroes_effective_area_fit()
-    area = dblquad(lambda e,r: f2d(e,r)*2*np.pi*r,
-                   0, radius,
-                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+    area = integrate.dblquad(lambda e,r: f2d(e,r)*2*np.pi*r,
+                             0, radius,
+                             lambda e:energy_range[0], lambda e: energy_range[1])[0]
     norm_area = np.pi*radius**2
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
@@ -448,9 +448,9 @@ def heroes_effective_area_gaussian(energy_range=(20,30), fwhm=3, radius=9.5):
     """
     f2d = heroes_effective_area_fit()
     sigma = fwhm/2.355
-    area = dblquad(lambda e,r: f2d(e,r)*r*np.exp(-(r/sigma)**2/2)/sigma**2,
-                   0, radius,
-                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+    area = integrate.dblquad(lambda e,r: f2d(e,r)*r*np.exp(-(r/sigma)**2/2)/sigma**2,
+                             0, radius,
+                             lambda e:energy_range[0], lambda e: energy_range[1])[0]
     norm_area = 1.
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
@@ -513,9 +513,9 @@ def heroes_effective_area_actual(energy_range=(20,30), actual='grs1915',
         raise ValueError("Invalid target for actual pointing data")
 
 
-    area = dblquad(lambda e,r: f2d(e,r)*func(r),
-                   0, radius,
-                   lambda e:energy_range[0], lambda e: energy_range[1])[0]
+    area = integrate.dblquad(lambda e,r: f2d(e,r)*func(r),
+                             0, radius,
+                             lambda e:energy_range[0], lambda e: energy_range[1])[0]
 
     norm_area = 1.
     area /= norm_area*(energy_range[1]-energy_range[0])
