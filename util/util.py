@@ -373,7 +373,7 @@ def xray_transmission_in_atmosphere(energy_kev, height_km, view_angle=90, data =
     
     co = mass_attenuation_coefficicent(energy_kev, material='air stp')
     mass_flux = atmosphere_mass(height_km)
-    return np.exp(-co * mass_flux  * np.sin(np.deg2rad(view_angle)) )
+    return np.exp(-co * mass_flux / np.sin(np.deg2rad(view_angle)) )
 
 def foxsi_effective_area_fitdata():
 
