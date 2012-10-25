@@ -20,6 +20,7 @@ from scipy.integrate import quad
 from scipy import integrate
 from scipy import interpolate
 from scipy.misc import derivative
+from scipy import optimize
 
 try:
     from .. fit_data import Fit_data
@@ -535,3 +536,12 @@ def heroes_effective_area_actual(energy_range=(20,30), actual='grs1915',
     norm_area = 1.
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
+
+def fitfunc(x, y, function, initial, free=None, yerr=None, **kwargs):
+    """Wrapper to scipy.optimize.leastsq to fit data to an arbitrary function."""
+    if free is None: free = np.ones(np.shape(initial))
+    if yerr is None: yerr = np.ones(np.shape(y))
+
+    errfunc = lambda p, xp, yp, yerrp: (yp-function(p*free+initial*np.logical_not(free), xp))/yerrp
+
+    return optimize.leastsq(errfunc, initial, args=(x, y, yerr), **kwargs)
