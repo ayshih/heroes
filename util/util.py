@@ -414,8 +414,9 @@ def heroes_effective_area_fit():
     #energy = np.arange(17.50,80.25,0.25)
     theta = np.arange(0,13) # arcmin
     
-    #Total effective area is 2 13-shell modules and 6 14-shell modules
-    area = 2*data13[:,1:]+6*data14[:,1:]
+    #Total effective area is 3 13-shell modules and 5 14-shell modules
+    #Count verified on 2012 Oct 22
+    area = 3*data13[:,1:]+5*data14[:,1:]
 
     #y, x = np.meshgrid(theta, energy)
     #f2d = interpolate.interp2d(x, y, area)
