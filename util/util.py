@@ -435,7 +435,7 @@ def heroes_effective_area_tophat(energy_range=(20,30), radius=9.5):
     f2d = heroes_effective_area_fit()
     area = integrate.dblquad(lambda e,r: f2d(e,r)*2*np.pi*r,
                              0, radius,
-                             lambda e:energy_range[0], lambda e: energy_range[1])[0]
+                             lambda r:energy_range[0], lambda r: energy_range[1])[0]
     norm_area = np.pi*radius**2
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
@@ -457,7 +457,7 @@ def heroes_effective_area_gaussian(energy_range=(20,30), fwhm=3, radius=9.5,
     if offaxis == 0:
         area = integrate.dblquad(lambda e,r: f2d(e,r)*r*np.exp(-(r/sigma)**2/2)/sigma**2,
                                  0, radius,
-                                 lambda e:energy_range[0], lambda e: energy_range[1])[0]
+                                 lambda r:energy_range[0], lambda r: energy_range[1])[0]
     else:
         r2 = lambda x,y: x**2+y**2
 #        area = integrate.dblquad(lambda y,x: np.exp(-(r(x-offaxis,y)/sigma)**2/2)/(2*np.pi*sigma**2),
@@ -531,7 +531,7 @@ def heroes_effective_area_actual(energy_range=(20,30), actual='grs1915',
 
     area = integrate.dblquad(lambda e,r: f2d(e,r)*func(r),
                              0, radius,
-                             lambda e:energy_range[0], lambda e: energy_range[1])[0]
+                             lambda r:energy_range[0], lambda r: energy_range[1])[0]
 
     norm_area = 1.
     area /= norm_area*(energy_range[1]-energy_range[0])
