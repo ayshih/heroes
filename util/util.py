@@ -545,3 +545,17 @@ def fitfunc(x, y, function, initial, free=None, yerr=None, **kwargs):
     errfunc = lambda p, xp, yp, yerrp: (yp-function(p*free+initial*np.logical_not(free), xp))/yerrp
 
     return optimize.leastsq(errfunc, initial, args=(x, y, yerr), **kwargs)
+
+def heroes_atmospheric_attenuation(energy_range = (20, 30),
+                                   altitude = (40, 40.1),
+                                   elevation = (45, 45.1)):
+    """First attempt, not fully tested and *very* slow"""
+    f = lambda en, al, el: xray_transmission_in_atmosphere(en, al, view_angle=el)
+    attenuation = integrate.tplquad(f, elevation[0], elevation[1],
+                                    lambda el: altitude[0], lambda el: altitude[1],
+                                    lambda el, al: energy_range[0], lambda el, al: energy_range[1])[0]
+    attenuation /= energy_range[1]-energy_range[0]
+    attenuation /= altitude[1]-altitude[0]
+    attenuation /= elevation[1]-elevation[0]
+
+    return attenuation
