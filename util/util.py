@@ -537,12 +537,24 @@ def heroes_effective_area_actual(energy_range=(20,30), actual='grs1915',
     area /= norm_area*(energy_range[1]-energy_range[0])
     return area
 
+def str2func(function):
+    if isinstance(function, str):
+        if function.lower() == 'gaussian':
+            # p[0] is normalization
+            # p[1] is mean (first raw moment)
+            # p[2] is sigma (square root of second central moment)
+            f = lambda p, x: p[0]/np.sqrt(2.*np.pi)/p[2]*np.exp(-((x-p[1])/p[2])**2/2.)
+        else:
+            raise ValueError
+    return f
+
 def fitfunc(x, y, function, initial, free=None, yerr=None, **kwargs):
     """Wrapper to scipy.optimize.leastsq to fit data to an arbitrary function."""
+    f = str2func(function) if isinstance(function, str) else function
     if free is None: free = np.ones(np.shape(initial))
     if yerr is None: yerr = np.ones(np.shape(y))
 
-    errfunc = lambda p, xp, yp, yerrp: (yp-function(p*free+initial*np.logical_not(free), xp))/yerrp
+    errfunc = lambda p, xp, yp, yerrp: (yp-f(p*free+initial*np.logical_not(free), xp))/yerrp
 
     return optimize.leastsq(errfunc, initial, args=(x, y, yerr), **kwargs)
 
